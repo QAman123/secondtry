@@ -2,7 +2,6 @@ import os
 from huggingface_hub import InferenceClient
 
 def generate_resume_and_cover_letter(name, job_title, summary, skills, experience, education):
-    # Read API key from environment variable
     hf_api_key = os.getenv("HF_API_KEY")
     if not hf_api_key:
         raise ValueError("Missing Hugging Face API key. Please set the HF_API_KEY environment variable.")
