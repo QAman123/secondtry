@@ -126,7 +126,8 @@ def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructio
     )
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        #model="gpt-4o-mini",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -170,18 +171,11 @@ def check_password():
     else:
         return True
 
-
 if check_password():
     st.title("Resume & Cover Letter Tailor")
 
     st.subheader("1. 💼 Paste the **Job Description** below:")
-    #st.markdown("💼 Paste the **Job Description** below:")
     job_desc = st.text_area("Job Description", height=200)
-
-
-
-    # Creative enhancement options organized by category
-    #st.subheader("Choose Creative Enhancements (pick multiple per category, but total enhancement limited to ")
 
     st.subheader("2. 🎨 Choose Creative Enhancements")
     st.markdown(
@@ -209,6 +203,7 @@ if check_password():
     flair_options = [
         "Start with a short personal story",
         "Include subtle humor",
+        "Include humor",
         "Incorporate motivational language",
         "Highlight entrepreneurial mindset",
         "Showcase emotional intelligence",
@@ -237,8 +232,15 @@ if check_password():
         "Appeal to a data-driven and analytical culture"
     ]
 
-    # Create three columns for the categories
+    # Weights options dropdown
+    weight_labels = ["Low", "Medium", "High"]
+    weight_values = {"Low": 1, "Medium": 3, "High": 5}
+
+    # Create three columns for categories
     col1, col2, col3 = st.columns(3)
+
+    # Dictionary to store selected enhancements and their weights
+    enhancement_weights = {}
 
     with col1:
         st.markdown("**Writing Style**")
@@ -247,6 +249,14 @@ if check_password():
             style_options,
             key="style_select"
         )
+        for style in selected_style:
+            weight = st.selectbox(
+                f"Weight for '{style}'",
+                weight_labels,
+                index=1,
+                key=f"weight_style_{style}"
+            )
+            enhancement_weights[style] = weight_values[weight]
 
     with col2:
         st.markdown("**Creative Flair**")
@@ -255,6 +265,14 @@ if check_password():
             flair_options,
             key="flair_select"
         )
+        for flair in selected_flair:
+            weight = st.selectbox(
+                f"Weight for '{flair}'",
+                weight_labels,
+                index=1,
+                key=f"weight_flair_{flair}"
+            )
+            enhancement_weights[flair] = weight_values[weight]
 
     with col3:
         st.markdown("**Company Type**")
@@ -263,24 +281,30 @@ if check_password():
             company_type_options,
             key="company_select"
         )
+        for comp in selected_company:
+            weight = st.selectbox(
+                f"Weight for '{comp}'",
+                weight_labels,
+                index=1,
+                key=f"weight_company_{comp}"
+            )
+            enhancement_weights[comp] = weight_values[weight]
 
-    # Combine all selected options
-    all_creative_options = selected_style + selected_flair + selected_company
-
-    # Build creative instructions
-    if all_creative_options:
-        creative_instructions = "\nCreative Enhancements to apply:\n" + "\n".join(
-            f"- {item}" for item in all_creative_options)
+    # Build creative instructions string with weights
+    if enhancement_weights:
+        creative_instructions = "Creative Enhancements to apply (with importance weights):\n" + "\n".join(
+            f"- {enhancement} (importance: {weight})" for enhancement, weight in enhancement_weights.items()
+        )
     else:
         creative_instructions = ""
 
     st.subheader("3. 💬 What language do you want to work in?")
-    # Language dropdown
     language = st.selectbox(
         "Select output language",
         options=["English", "Spanish", "French", "German", "Chinese", "Japanese", "Russian"],
         index=0,
     )
+
     st.subheader("4. 📎 Upload your Resume (PDF or DOCX)")
     uploaded_file = st.file_uploader("", type=["pdf", "docx"])
 
