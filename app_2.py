@@ -10,6 +10,7 @@ from fpdf import FPDF
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+
 def clean_text(text):
     replacements = {
         '\u2013': '-', '\u2014': '-',
@@ -20,6 +21,7 @@ def clean_text(text):
     for k, v in replacements.items():
         text = text.replace(k, v)
     return text
+
 
 def create_pdf(adapted_resume, cover_letter):
     adapted_resume = clean_text(adapted_resume)
@@ -48,6 +50,7 @@ def create_pdf(adapted_resume, cover_letter):
     pdf_bytes = pdf.output(dest='S').encode('latin-1')
     return BytesIO(pdf_bytes)
 
+
 def create_docx(adapted_resume, cover_letter):
     doc = Document()
     doc.add_heading("Adapted Resume", level=1)
@@ -66,6 +69,7 @@ def create_docx(adapted_resume, cover_letter):
     doc_stream.seek(0)
     return doc_stream
 
+
 def extract_text_from_pdf(uploaded_file):
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
     text = ""
@@ -73,6 +77,7 @@ def extract_text_from_pdf(uploaded_file):
         text += page.get_text()
     doc.close()
     return text
+
 
 def extract_text_from_docx(file):
     try:
@@ -84,6 +89,7 @@ def extract_text_from_docx(file):
     except Exception as e:
         st.error(f"Error reading DOCX: {e}")
         return None
+
 
 def extract_resume_text(uploaded_file):
     if uploaded_file.type == "application/pdf":
@@ -97,6 +103,7 @@ def extract_resume_text(uploaded_file):
         st.error("Unsupported file type. Please upload PDF or DOCX.")
         return None
 
+
 def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructions, language):
     system_prompt = (
         "You are an expert career coach and resume writer.\n"
@@ -107,13 +114,15 @@ def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructio
         "and\n"
         "=== Cover Letter ==="
     )
+
     user_prompt = (
-        f"Job Description:\n{job_desc}\n\n"
-        f"Candidate Resume:\n{resume_text}\n\n"
+        f"Job Description:\n{job_desc}\n\nCandidate Resume:\n{resume_text}\n\n"
         f"{creative_instructions}\n\n"
-        f"Please respond in {language}.\n\n"
         "Please provide:\n1) Adapted Resume\n2) Cover Letter\n\n"
-        "Separate them exactly using the headings."
+        "Separate them exactly using the headings:\n"
+        "=== Adapted Resume ===\n"
+        "and\n"
+        "=== Cover Letter ==="
     )
 
     response = client.chat.completions.create(
@@ -126,6 +135,7 @@ def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructio
         temperature=0.7,
     )
     return response.choices[0].message.content.strip()
+
 
 def split_output(output_text):
     adapted_resume = ""
@@ -140,7 +150,9 @@ def split_output(output_text):
 
     return adapted_resume, cover_letter
 
+
 PASSWORD = "two_cats"
+
 
 def check_password():
     if "password_correct" not in st.session_state:
@@ -151,7 +163,6 @@ def check_password():
         if pwd:
             if pwd == PASSWORD:
                 st.session_state.password_correct = True
-                # Instead of rerun, just return True
                 return True
             else:
                 st.error("Incorrect password")
@@ -159,58 +170,127 @@ def check_password():
     else:
         return True
 
+
 if check_password():
-    # The rest of your app code below
     st.title("Resume & Cover Letter Tailor")
 
-
-    st.markdown("Paste the **Job Description** below:")
+    st.subheader("1. 💼 Paste the **Job Description** below:")
+    #st.markdown("💼 Paste the **Job Description** below:")
     job_desc = st.text_area("Job Description", height=200)
 
-    uploaded_file = st.file_uploader("Upload your Resume (PDF or DOCX)", type=["pdf", "docx"])
 
-    # Creative enhancement options
-    creative_options = [
-        "Make it more storytelling",
-        "Add impactful action verbs",
-        "Use professional and positive tone",
-        "Add quantifiable achievements",
-        "Use simple and clear language",
-        "Focus on leadership skills",
-        "Make it concise and to the point",
-        "Highlight problem-solving abilities",
-    ]
 
-    selected_enhancements = st.multiselect(
-        "Choose creative enhancements",
-        creative_options,
+    # Creative enhancement options organized by category
+    #st.subheader("Choose Creative Enhancements (pick multiple per category, but total enhancement limited to ")
+
+    st.subheader("2. 🎨 Choose Creative Enhancements")
+    st.markdown(
+        f"<span style='font-size: 0.85em; color: gray;'>You can pick multiple per category, but don't add too many to prevent inconsistency.</span>",
+        unsafe_allow_html=True
     )
 
-    st.markdown("**Custom Creative Enhancements** (optional)")
-    custom_input = st.text_area("Enter one per line (e.g. 'Add metaphors', 'Make it more engaging')", height=100)
-    custom_enhancements = [line.strip() for line in custom_input.split('\n') if line.strip()]
+    # Style options
+    style_options = [
+        "Professional and polished",
+        "Friendly and conversational",
+        "Bold and confident",
+        "Concise and direct",
+        "Narrative storytelling",
+        "Analytical and data-driven",
+        "Warm and empathetic",
+        "Visionary and inspiring",
+        "Energetic and enthusiastic",
+        "Calm and composed",
+        "Sincere and humble",
+        "Assertive and goal-oriented"
+    ]
 
-    # Combine all creative enhancements into one prompt snippet
-    all_enhancements = selected_enhancements + custom_enhancements
-    if all_enhancements:
-        creative_instructions = "Creative Enhancements:\n- " + "\n- ".join(all_enhancements)
+    # Flair options
+    flair_options = [
+        "Start with a short personal story",
+        "Include subtle humor",
+        "Incorporate motivational language",
+        "Highlight entrepreneurial mindset",
+        "Showcase emotional intelligence",
+        "Emphasize results over responsibilities",
+        "Add a visionary or future-forward tone",
+        "Use metaphors or analogies",
+        "Tie in a relevant quote or motto",
+        "Include a call to action at the end",
+        "Weave in a unique career insight",
+        "Celebrate cultural intelligence or diversity",
+        "Connect past roles to broader global trends",
+        "Mention meaningful personal passions (if relevant)"
+    ]
+
+    # Company type options
+    company_type_options = [
+        "Tailor for a startup company",
+        "Tailor for a corporate enterprise",
+        "Appeal to a creative industry",
+        "Fit for a non-profit/mission-driven org",
+        "Align with a fast-scaling tech company",
+        "Fit for a government/public sector role",
+        "Appeal to a global/multinational organization",
+        "Tailor for a consultancy or agency environment",
+        "Fit for a remote-first or flexible workplace",
+        "Appeal to a data-driven and analytical culture"
+    ]
+
+    # Create three columns for the categories
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("**Writing Style**")
+        selected_style = st.multiselect(
+            "Choose writing style:",
+            style_options,
+            key="style_select"
+        )
+
+    with col2:
+        st.markdown("**Creative Flair**")
+        selected_flair = st.multiselect(
+            "Add creative elements:",
+            flair_options,
+            key="flair_select"
+        )
+
+    with col3:
+        st.markdown("**Company Type**")
+        selected_company = st.multiselect(
+            "Target company type:",
+            company_type_options,
+            key="company_select"
+        )
+
+    # Combine all selected options
+    all_creative_options = selected_style + selected_flair + selected_company
+
+    # Build creative instructions
+    if all_creative_options:
+        creative_instructions = "\nCreative Enhancements to apply:\n" + "\n".join(
+            f"- {item}" for item in all_creative_options)
     else:
         creative_instructions = ""
 
+    st.subheader("3. 💬 What language do you want to work in?")
     # Language dropdown
     language = st.selectbox(
         "Select output language",
         options=["English", "Spanish", "French", "German", "Chinese", "Japanese", "Russian"],
         index=0,
     )
+    st.subheader("4. 📎 Upload your Resume (PDF or DOCX)")
+    uploaded_file = st.file_uploader("", type=["pdf", "docx"])
 
     if uploaded_file:
         resume_text = extract_resume_text(uploaded_file)
         if resume_text:
-            st.subheader("Extracted Resume Text Preview")
-            st.text_area("Resume Text", resume_text[:8000], height=300)
+            st.markdown("Extracted Resume Text Preview")
+            st.text_area("Resume Text", resume_text[:8000], height=100)
 
-            if st.button("Generate Adapted Resume & Cover Letter"):
+            if st.button("🔔 5. Generate Adapted Resume & Cover Letter"):
                 with st.spinner("Generating..."):
                     output = generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructions, language)
                     adapted_resume, cover_letter = split_output(output)
@@ -219,21 +299,15 @@ if check_password():
                 st.session_state["cover_letter"] = cover_letter
 
     if "adapted_resume" in st.session_state and "cover_letter" in st.session_state:
-        st.subheader("Adapted Resume")
+        st.subheader("******* 👍👍 Results 👍👍 *******")
+        st.subheader("Suggested Resume (check carefully for accuracy!)")
         st.text_area("", st.session_state["adapted_resume"], height=600)
 
-        st.subheader("Cover Letter")
+        st.subheader("Cover Letter (check carefully for accuracy!)")
         st.text_area("", st.session_state["cover_letter"], height=600)
 
         docx_file = create_docx(st.session_state["adapted_resume"], st.session_state["cover_letter"])
         pdf_file = create_pdf(st.session_state["adapted_resume"], st.session_state["cover_letter"])
-
-        # st.download_button(
-        #     label="📄 Download PDF",
-        #     data=pdf_file,
-        #     file_name="Adapted_Resume_and_Cover_Letter.pdf",
-        #     mime="application/pdf"
-        # )
 
         st.download_button(
             label="Download Adapted Resume & Cover Letter as DOCX",
@@ -242,12 +316,5 @@ if check_password():
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
-        # if st.button("Restart"):
-        #     for key in ["adapted_resume", "cover_letter"]:
-        #         if key in st.session_state:
-        #             del st.session_state[key]
-        #     st.experimental_rerun()
-
     else:
         st.info("Please upload a resume and enter job description to start.")
-
