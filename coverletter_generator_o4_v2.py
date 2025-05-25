@@ -135,8 +135,8 @@ def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructio
     print("==========================")
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        #model="gpt-4o",
+        #model="gpt-4o-mini",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
