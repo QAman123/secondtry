@@ -16,7 +16,8 @@ def clean_text(text):
         '\u2013': '-', '\u2014': '-',
         '\u2018': "'", '\u2019': "'",
         '\u201c': '"', '\u201d': '"',
-        '\u2026': '...',
+        '\u2026': '...','\u2022': '-',  # bullet point replaced by dash
+        # add more replacements if needed
     }
     for k, v in replacements.items():
         text = text.replace(k, v)
@@ -118,6 +119,7 @@ def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructio
     user_prompt = (
         f"Job Description:\n{job_desc}\n\nCandidate Resume:\n{resume_text}\n\n"
         f"{creative_instructions}\n\n"
+        f"**Important:** Please provide the entire output in {language} language, regardless of the input language.\n\n"
         "Please provide:\n1) Adapted Resume\n2) Cover Letter\n\n"
         "Separate them exactly using the headings:\n"
         "=== Adapted Resume ===\n"
@@ -126,8 +128,8 @@ def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructio
     )
 
     response = client.chat.completions.create(
-        #model="gpt-4o-mini",
-        model="gpt-4o",
+        model="gpt-4o-mini",
+        #model="gpt-4o",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},

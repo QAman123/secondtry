@@ -16,7 +16,8 @@ def clean_text(text):
         '\u2013': '-', '\u2014': '-',
         '\u2018': "'", '\u2019': "'",
         '\u201c': '"', '\u201d': '"',
-        '\u2026': '...',
+        '\u2026': '...', '\u2022': '-',  # bullet point replaced by dash
+        # add more replacements if needed
     }
     for k, v in replacements.items():
         text = text.replace(k, v)
@@ -104,7 +105,7 @@ def extract_resume_text(uploaded_file):
         return None
 
 
-def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructions, language):
+def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructions, language, temperature):
     system_prompt = (
         "You are an expert career coach and resume writer.\n"
         "Adapt the candidate's resume to better fit the job description.\n"
@@ -118,6 +119,7 @@ def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructio
     user_prompt = (
         f"Job Description:\n{job_desc}\n\nCandidate Resume:\n{resume_text}\n\n"
         f"{creative_instructions}\n\n"
+        f"**Important:** Please provide the entire output in {language} language, regardless of the input language.\n\n"
         "Please provide:\n1) Adapted Resume\n2) Cover Letter\n\n"
         "Separate them exactly using the headings:\n"
         "=== Adapted Resume ===\n"
@@ -126,14 +128,14 @@ def generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructio
     )
 
     response = client.chat.completions.create(
-        #model="gpt-4o-mini",
-        model="gpt-4o",
+        model="gpt-4o-mini",
+        # model="gpt-4o",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
         max_tokens=3000,
-        temperature=0.7,
+        temperature=temperature,
     )
     return response.choices[0].message.content.strip()
 
@@ -170,6 +172,7 @@ def check_password():
         return False
     else:
         return True
+
 
 if check_password():
     st.title("Resume & Cover Letter Tailor")
@@ -298,14 +301,31 @@ if check_password():
     else:
         creative_instructions = ""
 
-    st.subheader("3. 💬 What language do you want to work in?")
+    st.subheader("3. 🎯 AI Creativity Level")
+    creativity_options = {
+        "Low": 0.3,
+        "Medium": 0.7,
+        "High": 1.0,
+        "Very High": 1.3
+    }
+
+    creativity_level = st.selectbox(
+        "Select creativity level for AI responses:",
+        options=list(creativity_options.keys()),
+        index=1,  # Default to "Medium"
+        help="Higher creativity may produce more varied and creative outputs, but lower creativity ensures more consistent and focused results."
+    )
+
+    temperature = creativity_options[creativity_level]
+
+    st.subheader("4. 💬 What language do you want to work in?")
     language = st.selectbox(
         "Select output language",
         options=["English", "Dutch", "Spanish", "French", "German", "Chinese", "Japanese", "Russian"],
         index=0,
     )
 
-    st.subheader("4. 📎 Upload your Resume (PDF or DOCX)")
+    st.subheader("5. 📎 Upload your Resume (PDF or DOCX)")
     uploaded_file = st.file_uploader("", type=["pdf", "docx"])
 
     if uploaded_file:
@@ -314,9 +334,10 @@ if check_password():
             st.markdown("Extracted Resume Text Preview")
             st.text_area("Resume Text", resume_text[:8000], height=100)
 
-            if st.button("🔔 5. Generate Adapted Resume & Cover Letter"):
+            if st.button("🔔 6. Generate Adapted Resume & Cover Letter"):
                 with st.spinner("Generating..."):
-                    output = generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructions, language)
+                    output = generate_adapted_resume_and_cover(job_desc, resume_text, creative_instructions, language,
+                                                               temperature)
                     adapted_resume, cover_letter = split_output(output)
 
                 st.session_state["adapted_resume"] = adapted_resume
