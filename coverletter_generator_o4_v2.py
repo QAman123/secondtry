@@ -7,6 +7,20 @@ import fitz  # PyMuPDF for PDF text extraction
 import difflib
 from fpdf import FPDF
 
+import streamlit as st
+
+# Hide Streamlit header and footer
+hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden;}     /* Hides the hamburger menu */
+    footer {visibility: hidden;}        /* Hides the footer */
+    header {visibility: hidden;}        /* Hides the top Streamlit header bar */
+    .css-cio0dv.e1tzin5v2 {display: none;}  /* Extra safety: hides username on footer */
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
